@@ -79,6 +79,19 @@ app.get("/", (req, res) => {
   res.send("NCAA Stats Bot is running!")
 })
 
+// Add a test endpoint
+app.get("/test-message", async (req, res) => {
+  try {
+    const testStats = await fetchNcaaStats()
+    const message = formatStatsMessage(testStats)
+    await postToSlack(message)
+    res.send("Test message sent successfully!")
+  } catch (error) {
+    console.error("Error sending test message:", error)
+    res.status(500).send("Error sending test message")
+  }
+})
+
 // Start the Express server
 app.listen(port, () => {
   console.log(
