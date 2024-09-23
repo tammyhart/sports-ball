@@ -32,7 +32,7 @@ SLACK_CHANNEL_ID=your_slack_channel
 ```
 
 11. Create a project on Heroku
-12. Connect the project to your fork of this repo
+12. Connect the project to your fork of this repo and enable auto deploy
 13. Add the variables from step 10 in the project's settings under "Config Vars"
 14. On the Resources tab, toggle the worker dyno on
 15. Still on the Resources tab, search for and add the "Heroku Scheduler"
