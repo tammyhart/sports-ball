@@ -29,7 +29,7 @@ To run locally, you can `npm install` or `yarn`. Then after you complete the Set
 CFBD_API_KEY=your_unique_api_key
 SLACK_BOT_TOKEN=your_oauth_bot_token
 SLACK_CHANNEL_ID=your_slack_channel
-FAVORITE_TEAMS='{"Alabama":"🐘","Oklahoma State":"🤠","Tennessee":"🍊"}'
+FAVORITE_TEAMS={"Alabama":"🐘","Oklahoma State":"🤠","Tennessee":"🍊"}
 ```
 
 11. Create a project on Heroku
