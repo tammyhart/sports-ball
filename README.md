@@ -32,13 +32,13 @@ SLACK_CHANNEL_ID=your_slack_channel
 FAVORITE_TEAMS={"Alabama":"🐘","Oklahoma State":"🤠","Tennessee":"🍊"}
 ```
 
-11. Create a project on Railway
-12. Connect the project to your fork of this repo and enable auto deploy
-13. Add the variables from step 11 in the worker's Variables tab
-14. Add another GitHub connected service and the Vriables there as well
-15. Under "Deploy", set the Custom Start Command to `node cron.js`
-16. Below that, set the Cron Schedule. For Monday at 9am CST, the schedule is `0 15 * * 1`. For CDT, it is `0 14 * * 1`
-17. Deploy both services
+12. Create a project on Railway
+13. Connect the project to your fork of this repo and enable auto deploy
+14. Add the variables from step 11 in the worker's Variables tab
+15. Add another GitHub connected service and the Vriables there as well
+16. Under "Deploy", set the Custom Start Command to `node cron.js`
+17. Below that, set the Cron Schedule. For Monday at 9am CST, the schedule is `0 15 * * 1`. For CDT, it is `0 14 * * 1`
+18. Deploy both services
 
 ## Usage
 
