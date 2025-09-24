@@ -34,13 +34,13 @@ function getPreviousWeek() {
   return Math.max(1, weekNumber)
 }
 
-function formatTeams(teams) {
-  const emoji = {
-    Alabama: "🐘",
-    "Oklahoma State": "🤠",
-    Tennessee: "🍊",
-  }
-  return teams.map((team) => `${emoji[team]} ${team}`).join(", ")
+const FAVORITE_TEAMS = JSON.parse(process.env.FAVORITE_TEAMS)
+const specificTeams = Object.keys(FAVORITE_TEAMS)
+
+function formatTeams() {
+  return Object.entries(FAVORITE_TEAMS)
+    .map(([team, emoji]) => `${emoji} ${team}`)
+    .join(", ")
 }
 
 function fetchOptions(thisWeek = false, params = {}) {
@@ -115,7 +115,7 @@ async function fetchTop25Games(rankings) {
   }
 }
 
-async function fetchUpcomingGamesData(teams) {
+async function fetchUpcomingGamesData() {
   try {
     // Fetch all games data and media data
     const [gamesResponse, mediaResponse] = await Promise.all([
@@ -132,7 +132,9 @@ async function fetchUpcomingGamesData(teams) {
     // Filter and combine the data
     const upcomingGames = gamesResponse.data
       .filter(
-        (game) => teams.includes(game.homeTeam) || teams.includes(game.awayTeam)
+        (game) =>
+          specificTeams.includes(game.homeTeam) ||
+          specificTeams.includes(game.awayTeam)
       )
       .map((game) => {
         const mediaInfo = mediaResponse.data.find(
@@ -256,24 +258,17 @@ function formatTop25GamesMessage(games, rankings) {
   return blocks
 }
 
-/*
- * Define your favorite teams
- */
-const specificTeams = ["Alabama", "Tennessee", "Oklahoma State"]
-
 function formatTeam(team, rankings) {
   const rank = rankings[team]
   const text = rank ? `#${rank} ${team}` : team
   return specificTeams.includes(team) ? `\`${text}\`` : `*${text}*`
 }
 
-function formatUpcomingGamesMessage(games, teams, rankings) {
+function formatUpcomingGamesMessage(games, rankings) {
   if (!games || games.length === 0) {
     return [
       {
-        text: `⛔️ No upcoming games found for ${formatTeams(
-          teams
-        )} this week.`,
+        text: `⛔️ No upcoming games found for ${formatTeams()} this week.`,
       },
     ]
   }
@@ -292,7 +287,7 @@ function formatUpcomingGamesMessage(games, teams, rankings) {
       elements: [
         {
           type: "mrkdwn",
-          text: `*Week ${getPreviousWeek() + 1}* for ${formatTeams(teams)}`,
+          text: `*Week ${getPreviousWeek() + 1}* for ${formatTeams()}`,
         },
       ],
     },
@@ -339,8 +334,8 @@ async function fetchTop25GamesMessage(rankings) {
 }
 
 async function fetchUpcomingGamesMessage(rankings) {
-  const upcomingGames = await fetchUpcomingGamesData(specificTeams)
-  return formatUpcomingGamesMessage(upcomingGames, specificTeams, rankings)
+  const upcomingGames = await fetchUpcomingGamesData()
+  return formatUpcomingGamesMessage(upcomingGames, rankings)
 }
 
 async function fetchMessage() {

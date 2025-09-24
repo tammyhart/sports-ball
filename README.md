@@ -29,6 +29,7 @@ To run locally, you can `npm install` or `yarn`. Then after you complete the Set
 CFBD_API_KEY=your_unique_api_key
 SLACK_BOT_TOKEN=your_oauth_bot_token
 SLACK_CHANNEL_ID=your_slack_channel
+FAVORITE_TEAMS='{"Alabama":"🐘","Oklahoma State":"🤠","Tennessee":"🍊"}'
 ```
 
 11. Create a project on Heroku
@@ -37,6 +38,11 @@ SLACK_CHANNEL_ID=your_slack_channel
 14. On the Resources tab, toggle the worker dyno on
 15. Still on the Resources tab, search for and add the "Heroku Scheduler"
 16. Open the scheduler and add a job to run hourly with the command `curl https://your-app-id.herokuapp.com/` (replace `your-app-id` so that the Heroku app url is correct)
+
+## Preview
+
+This is what the data will look like:
+![Project Screenshot](screenshot.png)
 
 ## Usage
 
@@ -49,5 +55,5 @@ To view the output without posting a message to Slack, you can visit your app ur
 
 There is also an endpoint to test posting the message. By visiting this URL, a message will post immediately to your Slack channel
 
-- Local: `http://localhost:3000/test-message`
-- Hosted: `https://your-app-id.herokuapp.com/test-message`
+- Local: `http://localhost:3000/test`
+- Hosted: `https://your-app-id.herokuapp.com/test`
