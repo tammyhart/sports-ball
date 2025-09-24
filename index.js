@@ -156,8 +156,46 @@ async function fetchUpcomingGamesData(teams) {
 }
 
 function formatScore(rank, team, points) {
-  if (rank) return `\`#${rank} ${team} - ${points}\``
-  return `${team} - ${points}`
+  if (rank) {
+    return [
+      {
+        type: "text",
+        text: `#${rank} `,
+        style: {
+          code: true,
+        },
+      },
+      {
+        type: "text",
+        text: `${team}: `,
+        style: {
+          bold: true,
+          code: true,
+        },
+      },
+      {
+        type: "text",
+        text: `${points}`,
+        style: {
+          code: true,
+        },
+      },
+    ]
+  }
+
+  return [
+    {
+      type: "text",
+      text: `${team}: `,
+      style: {
+        bold: true,
+      },
+    },
+    {
+      type: "text",
+      text: `${points}`,
+    },
+  ]
 }
 
 function formatTop25GamesMessage(games, rankings) {
@@ -174,39 +212,62 @@ function formatTop25GamesMessage(games, rankings) {
       type: "header",
       text: {
         type: "plain_text",
-        text: `🏈 NCAAF Game Scores for Week ${getPreviousWeek()} from the Top 25 Teams: 🏈`,
+        text: "🏈 NCAAF Game Scores 🏈",
         emoji: true,
       },
+    },
+    {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: `*Week ${getPreviousWeek()}* from the Top 25 Teams`,
+        },
+      ],
     },
     {
       type: "divider",
     },
   ]
 
-  games.forEach((game) => {
-    const text = `> ${formatScore(
-      rankings[game.awayTeam],
-      game.awayTeam,
-      game.awayPoints
-    )} ＠ ${formatScore(
-      rankings[game.homeTeam],
-      game.homeTeam,
-      game.homePoints
-    )}\n`
+  const elements = games.flatMap((game) => [
+    ...formatScore(rankings[game.awayTeam], game.awayTeam, game.awayPoints),
+    {
+      type: "text",
+      text: "   @   ",
+    },
+    ...formatScore(rankings[game.homeTeam], game.homeTeam, game.homePoints),
+    {
+      type: "text",
+      text: "\n\n",
+    },
+  ])
 
-    blocks.push({
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text,
+  blocks.push({
+    type: "rich_text",
+    elements: [
+      {
+        type: "rich_text_section",
+        elements,
       },
-    })
+    ],
   })
 
   return blocks
 }
 
-function formatUpcomingGamesMessage(games, teams) {
+/*
+ * Define your favorite teams
+ */
+const specificTeams = ["Alabama", "Tennessee", "Oklahoma State"]
+
+function formatTeam(team, rankings) {
+  const rank = rankings[team]
+  const text = rank ? `#${rank} ${team}` : team
+  return specificTeams.includes(team) ? `\`${text}\`` : `*${text}*`
+}
+
+function formatUpcomingGamesMessage(games, teams, rankings) {
   if (!games || games.length === 0) {
     return [
       {
@@ -222,11 +283,18 @@ function formatUpcomingGamesMessage(games, teams) {
       type: "header",
       text: {
         type: "plain_text",
-        text: `Upcoming Games in Week ${
-          getPreviousWeek() + 1
-        } for ${formatTeams(teams)}:`,
+        text: "Upcoming Games",
         emoji: true,
       },
+    },
+    {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: `*Week ${getPreviousWeek() + 1}* for ${formatTeams(teams)}`,
+        },
+      ],
     },
     {
       type: "divider",
@@ -234,14 +302,16 @@ function formatUpcomingGamesMessage(games, teams) {
   ]
 
   games.forEach((game) => {
-    let text = `${game.awayTeam} @ ${game.homeTeam}\n`
-    text += `📍 Venue: ${game.venue}\n`
-    text += `⏰ Kickoff: ${new Date(game.startDate).toLocaleString(
+    let text = `🏈  ${formatTeam(game.awayTeam, rankings)}  ﹫  ${formatTeam(
+      game.homeTeam,
+      rankings
+    )}\n\n`
+    text += `> 📍  ${game.venue}\n`
+    text += `> ⏰  ${new Date(game.startDate).toLocaleString(
       "en-US",
       dateOptions
     )} CT\n`
-    text += `📺 Watch on: ${game.tv || "None"}\n`
-    text += "\n"
+    text += `> 📺  ${game.tv || "None"}`
 
     blocks.push({
       type: "section",
@@ -250,55 +320,54 @@ function formatUpcomingGamesMessage(games, teams) {
         text,
       },
     })
+
+    blocks.push({
+      type: "section",
+      text: {
+        type: "plain_text",
+        text: "\n\n",
+      },
+    })
   })
 
   return blocks
 }
 
-async function fetchTop25GamesMessage() {
-  const rankings = await fetchTop25Teams()
+async function fetchTop25GamesMessage(rankings) {
   const games = await fetchTop25Games(rankings)
   return formatTop25GamesMessage(games, rankings)
 }
 
-async function fetchUpcomingGamesMessage() {
-  const specificTeams = ["Alabama", "Tennessee", "Oklahoma State"]
+async function fetchUpcomingGamesMessage(rankings) {
   const upcomingGames = await fetchUpcomingGamesData(specificTeams)
-  return formatUpcomingGamesMessage(upcomingGames, specificTeams)
+  return formatUpcomingGamesMessage(upcomingGames, specificTeams, rankings)
 }
 
 async function fetchMessage() {
+  const rankings = await fetchTop25Teams()
   const [top25GamesMessage, upcomingGamesMessage] = await Promise.all([
-    fetchTop25GamesMessage(),
-    fetchUpcomingGamesMessage(),
+    fetchTop25GamesMessage(rankings),
+    fetchUpcomingGamesMessage(rankings),
   ])
   return { blocks: [...top25GamesMessage, ...upcomingGamesMessage] }
+}
+
+async function postToSlack(message) {
+  try {
+    await slack.chat.postMessage({
+      channel: process.env.SLACK_CHANNEL_ID,
+      blocks: message.blocks,
+      text: "NCAAF Game Scores",
+    })
+    console.log("Message posted to Slack successfully")
+  } catch (error) {
+    console.error("Error posting message to Slack:", error)
+  }
 }
 
 async function updateAndPostStats() {
   const message = await fetchMessage()
   await postToSlack(message)
-}
-
-async function postToSlack(message) {
-  try {
-    if (typeof message === "string") {
-      await slack.chat.postMessage({
-        channel: process.env.SLACK_CHANNEL_ID,
-        text: message,
-      })
-    } else {
-      // If the message is a Block Kit object, use the 'blocks' property
-      await slack.chat.postMessage({
-        channel: process.env.SLACK_CHANNEL_ID,
-        blocks: message.blocks,
-        text: "NCAAF Game Scores", // Fallback text for notifications
-      })
-    }
-    console.log("Message posted to Slack successfully")
-  } catch (error) {
-    console.error("Error posting message to Slack:", error)
-  }
 }
 
 // Main route
@@ -312,7 +381,7 @@ app.get("/", async (req, res) => {
 })
 
 // Add a test endpoint
-app.get("/test-message", async (req, res) => {
+app.get("/test", async (req, res) => {
   try {
     const message = await fetchMessage()
     await postToSlack(message)
