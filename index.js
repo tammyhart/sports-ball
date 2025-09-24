@@ -22,8 +22,8 @@ function getPreviousWeek() {
   const currentYear = now.getFullYear()
 
   // Define the start date of the college football season
-  // Week 1 started on August 24, 2024
-  const seasonStart = new Date(currentYear, 7, 24) // August 24th
+  // Week 1 started on August 23, 2025
+  const seasonStart = new Date(currentYear, 7, 23) // August 24th
 
   // Calculate the number of days since the start of the season
   const daysSinceStart = Math.floor((now - seasonStart) / (24 * 60 * 60 * 1000))
@@ -40,7 +40,7 @@ function formatTeams(teams) {
     "Oklahoma State": "🤠",
     Tennessee: "🍊",
   }
-  return teams.map(team => `${emoji[team]} ${team}`).join(", ")
+  return teams.map((team) => `${emoji[team]} ${team}`).join(", ")
 }
 
 function fetchOptions(thisWeek = false, params = {}) {
@@ -67,7 +67,7 @@ async function fetchTop25Teams() {
     )
 
     const apPoll = response.data[0].polls.find(
-      poll => poll.poll === "AP Top 25"
+      (poll) => poll.poll === "AP Top 25"
     )
     if (!apPoll) {
       throw new Error("AP Top 25 poll not found in the response")
@@ -92,20 +92,20 @@ async function fetchTop25Games(rankings) {
     )
 
     const top25Games = response.data.filter(
-      game =>
-        rankings.hasOwnProperty(game.home_team) ||
-        rankings.hasOwnProperty(game.away_team)
+      (game) =>
+        rankings.hasOwnProperty(game.homeTeam) ||
+        rankings.hasOwnProperty(game.awayTeam)
     )
 
     // Sort games by the highest rank of participating teams
     return top25Games.sort((a, b) => {
       const aRank = Math.min(
-        rankings[a.home_team] || Infinity,
-        rankings[a.away_team] || Infinity
+        rankings[a.homeTeam] || Infinity,
+        rankings[a.awayTeam] || Infinity
       )
       const bRank = Math.min(
-        rankings[b.home_team] || Infinity,
-        rankings[b.away_team] || Infinity
+        rankings[b.homeTeam] || Infinity,
+        rankings[b.awayTeam] || Infinity
       )
       return aRank - bRank
     })
@@ -132,14 +132,14 @@ async function fetchUpcomingGamesData(teams) {
     // Filter and combine the data
     const upcomingGames = gamesResponse.data
       .filter(
-        game => teams.includes(game.home_team) || teams.includes(game.away_team)
+        (game) => teams.includes(game.homeTeam) || teams.includes(game.awayTeam)
       )
-      .map(game => {
+      .map((game) => {
         const mediaInfo = mediaResponse.data.find(
-          mediaGame =>
+          (mediaGame) =>
             mediaGame.id === game.id ||
-            (mediaGame.homeTeam === game.home_team &&
-              mediaGame.awayTeam === game.away_team)
+            (mediaGame.homeTeam === game.homeTeam &&
+              mediaGame.awayTeam === game.awayTeam)
         )
 
         return {
@@ -155,46 +155,104 @@ async function fetchUpcomingGamesData(teams) {
   }
 }
 
+function formatScore(rank, team, points) {
+  if (rank) return `\`#${rank} ${team} - ${points}\``
+  return `${team} - ${points}`
+}
+
 function formatTop25GamesMessage(games, rankings) {
   if (!games || games.length === 0) {
-    return "⛔️ No games involving top 25 teams available for this week."
+    return [
+      {
+        text: "⛔️ No games involving top 25 teams available for this week.",
+      },
+    ]
   }
 
-  let message = `🏈 *NCAAF Game Scores for Week ${getPreviousWeek()} from the Top 25 Teams:* 🏈\n\n`
-  games.forEach(game => {
-    const awayRank = rankings.hasOwnProperty(game.away_team)
-      ? `#${rankings[game.away_team]} `
-      : ""
-    const homeRank = rankings.hasOwnProperty(game.home_team)
-      ? `#${rankings[game.home_team]} `
-      : ""
+  const blocks = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: `🏈 NCAAF Game Scores for Week ${getPreviousWeek()} from the Top 25 Teams: 🏈`,
+        emoji: true,
+      },
+    },
+    {
+      type: "divider",
+    },
+  ]
 
-    message += `${awayRank}${game.away_team} - ${game.away_points} @ ${homeRank}${game.home_team} - ${game.home_points}\n`
+  games.forEach((game) => {
+    const text = `> ${formatScore(
+      rankings[game.awayTeam],
+      game.awayTeam,
+      game.awayPoints
+    )} ＠ ${formatScore(
+      rankings[game.homeTeam],
+      game.homeTeam,
+      game.homePoints
+    )}\n`
+
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text,
+      },
+    })
   })
 
-  return message
+  return blocks
 }
 
 function formatUpcomingGamesMessage(games, teams) {
   if (!games || games.length === 0) {
-    return `⛔️ No upcoming games found for ${formatTeams(teams)} this week.`
+    return [
+      {
+        text: `⛔️ No upcoming games found for ${formatTeams(
+          teams
+        )} this week.`,
+      },
+    ]
   }
 
-  let message = `*Upcoming Games in Week ${
-    getPreviousWeek() + 1
-  } for ${formatTeams(teams)}:*\n\n`
-  games.forEach(game => {
-    message += `${game.away_team} @ ${game.home_team}\n`
-    message += `📍 Venue: ${game.venue}\n`
-    message += `⏰ Kickoff: ${new Date(game.start_date).toLocaleString(
+  const blocks = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: `Upcoming Games in Week ${
+          getPreviousWeek() + 1
+        } for ${formatTeams(teams)}:`,
+        emoji: true,
+      },
+    },
+    {
+      type: "divider",
+    },
+  ]
+
+  games.forEach((game) => {
+    let text = `${game.awayTeam} @ ${game.homeTeam}\n`
+    text += `📍 Venue: ${game.venue}\n`
+    text += `⏰ Kickoff: ${new Date(game.startDate).toLocaleString(
       "en-US",
       dateOptions
     )} CT\n`
-    message += `📺 Watch on: ${game.tv || "None"}\n`
-    message += "\n"
+    text += `📺 Watch on: ${game.tv || "None"}\n`
+    text += "\n"
+
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text,
+      },
+    })
   })
 
-  return message
+  return blocks
 }
 
 async function fetchTop25GamesMessage() {
@@ -210,11 +268,11 @@ async function fetchUpcomingGamesMessage() {
 }
 
 async function fetchMessage() {
-  const messages = await Promise.all([
+  const [top25GamesMessage, upcomingGamesMessage] = await Promise.all([
     fetchTop25GamesMessage(),
     fetchUpcomingGamesMessage(),
   ])
-  return messages.join("\n\n")
+  return { blocks: [...top25GamesMessage, ...upcomingGamesMessage] }
 }
 
 async function updateAndPostStats() {
@@ -224,10 +282,19 @@ async function updateAndPostStats() {
 
 async function postToSlack(message) {
   try {
-    await slack.chat.postMessage({
-      channel: process.env.SLACK_CHANNEL_ID,
-      text: message,
-    })
+    if (typeof message === "string") {
+      await slack.chat.postMessage({
+        channel: process.env.SLACK_CHANNEL_ID,
+        text: message,
+      })
+    } else {
+      // If the message is a Block Kit object, use the 'blocks' property
+      await slack.chat.postMessage({
+        channel: process.env.SLACK_CHANNEL_ID,
+        blocks: message.blocks,
+        text: "NCAAF Game Scores", // Fallback text for notifications
+      })
+    }
     console.log("Message posted to Slack successfully")
   } catch (error) {
     console.error("Error posting message to Slack:", error)
