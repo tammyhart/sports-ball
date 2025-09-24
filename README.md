@@ -1,11 +1,11 @@
 # SportsBall Slack Bot
 
-Automatically post NCAAF scores to Slack every Monday at 9am Central time. Instructions include deploying and running with Heroku.
+Automatically post NCAAF scores to Slack. Instructions include deploying and running with Railway.
 
 **Notes:**
 
-- I've also included the upcoming game schedules for my family's favorite teams: 🐘 Alabama, 🍊 Tennessee, 🤠 Oklahoma State
-- You'll want to customize your Heroku timezone and the timezone specified in `index.js#dateOptions.timezone` to match your preferred timezone
+- Use the `FAVORITE_TEAMS` variable to set your favorite teams and an emoji to go with them.
+- You will need to set your own cron job. I recommend Monday at 9am so that the AP stats from the previous week are available.
 
 ## Install
 
@@ -32,17 +32,13 @@ SLACK_CHANNEL_ID=your_slack_channel
 FAVORITE_TEAMS={"Alabama":"🐘","Oklahoma State":"🤠","Tennessee":"🍊"}
 ```
 
-11. Create a project on Heroku
+11. Create a project on Railway
 12. Connect the project to your fork of this repo and enable auto deploy
-13. Add the variables from step 10 in the project's settings under "Config Vars"
-14. On the Resources tab, toggle the worker dyno on
-15. Still on the Resources tab, search for and add the "Heroku Scheduler"
-16. Open the scheduler and add a job to run hourly with the command `curl https://your-app-id.herokuapp.com/` (replace `your-app-id` so that the Heroku app url is correct)
-
-## Preview
-
-This is what the data will look like:
-![Project Screenshot](screenshot.png)
+13. Add the variables from step 11 in the worker's Variables tab
+14. Add another GitHub connected service and the Vriables there as well
+15. Under "Deploy", set the Custom Start Command to `node cron.js`
+16. Below that, set the Cron Schedule. For Monday at 9am CST, the schedule is `0 15 * * 1`. For CDT, it is `0 14 * * 1`
+17. Deploy both services
 
 ## Usage
 
@@ -51,9 +47,14 @@ This will begin running the script and the message will be posted in your Slack 
 To view the output without posting a message to Slack, you can visit your app url in a browser.
 
 - Local app url if running the node server on your machine: `http://localhost:3000`
-- Hosted app url is your Heroku project's url, e.g. `https://your-app-id.herokuapp.com`
+- Hosted app url is your Railway project's url, e.g. `https://{RAILWAY_NAME}.up.railway.app`
 
 There is also an endpoint to test posting the message. By visiting this URL, a message will post immediately to your Slack channel
 
 - Local: `http://localhost:3000/test`
-- Hosted: `https://your-app-id.herokuapp.com/test`
+- Hosted: `https://{RAILWAY_NAME}.up.railway.app/test`
+
+## Preview
+
+This is what the data will look like:
+![Project Screenshot](screenshot.png)
